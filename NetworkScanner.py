@@ -1,14 +1,18 @@
 import socket
 import subprocess
 import re
-import ipaddress
+
+"""
+CECS 327
+Authors: Justin Mabutas and Joseph Cuevas
+"""
 
 # Function to ping all hosts in the current network.
 #   We do this to update arp.
 def ping_network():
     host_ip = socket.gethostbyname(socket.gethostname())
     # Get the network from the host_ip with regex.
-    network = re.match(r"\b\d{1,3}\.\d{1,3}\.\d{1,3}\b.", host_ip).group()
+    network = re.match(r"\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\b", host_ip).group()
     for num in range(1,255):
         # Use Popen to asynchronously run ping commands on all hosts in the current network from [1,255). Ignore output.
         subprocess.Popen("ping -n 1 " + network + str(num), shell=True, stdout=False)
@@ -24,6 +28,7 @@ def get_ip_addresses():
     ip_addresses = subprocess.check_output("arp -a", shell=True)
     # Currently ip_addresses is a bytes-like object, so decode it to utf-8
     ip_addresses = ip_addresses.decode("utf-8")
+
     gateway_ip = network + gateway_ip
     broadcast_ip = network + broadcast_ip
     # Define ip_to_ignore to include host_ip, gateway_ip, and broadcast_ip
@@ -31,9 +36,13 @@ def get_ip_addresses():
     # Use regex to find all ip addresses that match network
     ip_addresses = re.findall(network+"\d{1,3}", ip_addresses)
 
+    print(ip_addresses)
     # Remove all elements in ip_to_ignore
     for x in ip_to_ignore:
-        ip_addresses.remove(x)
+        try:
+            ip_addresses.remove(x)
+        except ValueError:
+            print("Error Caught, Value not present int list: " + x)
     return ip_addresses
 
 if __name__ == '__main__':
