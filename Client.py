@@ -2,6 +2,7 @@ from NetworkScanner import get_ip_addresses
 from FileHandler import *
 import socket
 import threading
+import pickle
 
 """
 Authors: Justin Mabutas and Joseph Cuevas
@@ -51,7 +52,7 @@ def handle_client(conn, addr):
             continue_download = conn.recv(64).decode('utf-8')
             if continue_download == "!DISCONNECT":
                 break
-    print(f"[DISCONNECTED] {conn} has disconnected")
+    print(f"[DISCONNECTED] {addr} has disconnected")
     conn.close()
 
 # Function for checking whether a host has an open port (5050)
@@ -74,24 +75,52 @@ def send_file(client, file_name, file_data):
     send_length = bytes(str(fn_length), 'utf-8')
     send_length += b' ' * (64 - len(send_length))
     client.send(send_length)
+    # [1/4] File Name Length Received
     print(client.recv(2048).decode('utf-8'))
     client.send(fn)
+    # [2/4] File Name Received
     print(client.recv(2048).decode('utf-8'))
     # Send file_data
     file_data_length = len(file_data)
     send_length = str(file_data_length).encode('utf-8')
     send_length += b' ' * (64 - len(send_length))
     client.send(bytes(send_length))
+    # [3/4] File Data Length Received
     print(client.recv(2048).decode('utf-8'))
     client.send(bytes(file_data))
+    # [4/4] File Data Received
     print(client.recv(2048).decode('utf-8'))
     # Receive reponse
+    # [COMPLETE] File Created
     print(client.recv(2048).decode('utf-8'))
 
-def notifyNewMessage(client):
-    client.send("!NEW MESSAGE".encode('utf-8'))
-def sendDisconnectMessage(client):
-    client.send("!DISCONNECT".encode('utf-8'))
+def sendFilesByList(files):
+    for file in files:
+        file_data = getFileContentsAsBytes(file)
+        t = threading.Thread(target=send_file, args=(server, file, file_data))
+        t.start()
+        t.join()
+        if file == files[-1]:
+            sendMessage(server, "!DISCONNECT")
+        else:
+            sendMessage(server, "!CONTINUTE")
+
+def sendFilesByDictionary(files):
+    for i, (file_name,file_size) in enumerate(files.items()):
+        file_data = getFileContentsAsBytes(file_name)
+        t = threading.Thread(target=send_file, args=(server, file_name, file_data))
+        t.start()
+        t.join()
+        if i == len(files)-1:
+            sendMessage(server, bytes("!DISCONNECT",'utf-8'))
+        else:
+            sendMessage(server, bytes("!CONTINUE",'utf-8'))
+
+def sendFileDictionary():
+    file_dict = getShareableFilesAsDictionary()
+
+def sendMessage(client, message):
+    client.send(message)
 
 if __name__ == '__main__':
     host = socket.gethostname()  # Get local machine name
@@ -112,19 +141,13 @@ if __name__ == '__main__':
         t.join()
     print(f"[CHECKING COMPLETE] ")
 
+    # If nodes is empty, begin listening
     if not nodes:
         print("[STARTING] Client is starting...")
         start()
-    for node in nodes:
-        server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)  # Socket object
-        server.connect(node)
-        files = getShareableFiles()
-        for file_name in files:
-            file_data = getFileContentsAsBytes(file_name)
-            t = threading.Thread(target=send_file, args=(server,file_name,file_data))
-            t.start()
-            t.join()
-            if file_name == files[-1]:
-                sendDisconnectMessage(server)
-            else:
-                notifyNewMessage(server)
+    else:
+        for node in nodes:
+            server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)  # Socket object
+            server.connect(node)
+            file_dictionary = getShareableFilesAsDictionary()
+            sendFilesByDictionary(file_dictionary)
