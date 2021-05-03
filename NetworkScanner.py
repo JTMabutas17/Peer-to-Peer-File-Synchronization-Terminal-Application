@@ -1,14 +1,16 @@
 import socket
 import subprocess
 import re
+import threading
 
 """
 CECS 327
 Authors: Justin Mabutas and Joseph Cuevas
+Python file for scanning the current network.
 """
 
 # Function to ping all hosts in the current network.
-#   We do this to update arp.
+#   We do this to update arp -a command.
 def ping_network():
     host_ip = socket.gethostbyname(socket.gethostname())
     # Get the network from the host_ip with regex.
@@ -20,6 +22,7 @@ def ping_network():
 # Function to get the output of arp -a. The output is then filtered for ips in the current host's network.
 #   Returns the list of ips within the network, ignoring all elements of ip_to_ignore.
 def get_ip_addresses():
+    thread = threading.Thread(target=ping_network())
     host_ip = socket.gethostbyname(socket.gethostname())
     gateway_ip = "1"
     broadcast_ip = "255"
@@ -36,7 +39,6 @@ def get_ip_addresses():
     # Use regex to find all ip addresses that match network
     ip_addresses = re.findall(network+"\d{1,3}", ip_addresses)
 
-    print(ip_addresses)
     # Remove all elements in ip_to_ignore
     for x in ip_to_ignore:
         try:
@@ -44,25 +46,3 @@ def get_ip_addresses():
         except ValueError:
             print("Error Caught, Value not present int list: " + x)
     return ip_addresses
-
-if __name__ == '__main__':
-    ping_network()
-    for ip in get_ip_addresses():
-        print(ip)
-
-    # 10.0.0.192
-    # s = socket.socket()  # Create a socket object
-    # host = socket.gethostname()  # Get local machine name
-    # SERVER = socket.gethostbyname(socket.gethostname())
-    # port = 5050  # Reserve a port for your service.
-    #
-    # a_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    # location = ("10.0.0.192", 5050)
-    # check = a_socket.connect_ex(location)
-    #
-    # if check == 0:
-    #     print("Port is open")
-    # else:
-    #     print("Port is closed")
-    #
-    # a_socket.close()
