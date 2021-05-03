@@ -26,7 +26,7 @@ def start():
         conn, addr = client.accept()
         thread = threading.Thread(target=handle_client, args=(conn, addr))
         thread.start()
-        print(f"[CONNECTED] {conn} has connected")
+        print(f"[CONNECTED] {addr} has connected")
     exit(0)
 
 # Function for handling an incoming client.
