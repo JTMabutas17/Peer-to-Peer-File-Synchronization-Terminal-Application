@@ -53,8 +53,9 @@ def handle_client(client, conn, addr):
             continue_download = conn.recv(64).decode('utf-8')
             if continue_download == "!DISCONNECT":
                 break
-    host_client.connect(client)
-    sendFilesByDictionary(client, pre_sync_file_dict)
+    remote_client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)  # Socket object
+    remote_client.connect(addr)
+    sendFilesByDictionary(remote_client, pre_sync_file_dict)
     print(f"[DISCONNECTED] {addr} has disconnected")
     conn.close()
 
