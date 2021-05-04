@@ -24,10 +24,13 @@ def getShareableFilesAsDictionary():
     return shareable_dictionary
 
 # Return a unique dictionary of file_name/file_size between two dictionaries
+# Ignore README.md so that both dictionaries always have a value to send/receive
 def compareShareableFiles(host_dict, remote_dict):
     unique_dict = dict()
     for value in host_dict:
         if value not in remote_dict:
+            if value == "README.md":
+                continue
             unique_dict[value] = host_dict[value]
     return unique_dict
 
