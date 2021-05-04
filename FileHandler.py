@@ -29,7 +29,7 @@ def compareShareableFiles(host_dict, remote_dict):
     unique_dict = dict()
     for value in host_dict:
         if value == "README.md":
-            continue
+            unique_dict[value] = host_dict[value]
         if value not in remote_dict:
             unique_dict[value] = host_dict[value]
     return unique_dict
