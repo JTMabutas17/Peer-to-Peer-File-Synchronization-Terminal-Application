@@ -19,12 +19,12 @@ host_client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 host_client.bind((CLIENT_IP, 5050))
 
 # Start. Gets called if there are no other peers in the network.
-def start(skip_dictionary):
+def start():
     host_client.listen()
     print(f"[LISTENING] Currently listening on {SERVER}")
     while True:
         conn, addr = host_client.accept()
-        thread = threading.Thread(target=handle_client, args=(host_client, conn, addr, skip_dictionary))
+        thread = threading.Thread(target=handle_client, args=(host_client, conn, addr))
         thread.start()
         print(f"[CONNECTED] {addr} has connected")
     exit(0)
@@ -33,8 +33,12 @@ def start(skip_dictionary):
 # While true, we expect to receive 4 messages per file, followed by a message to indicate whether to continue.
 # Messages between sockets need to be encoded before sending and decoded after receiving.
 #   file_data comes as a bytes-like objects and thus does not need to be encoded/decoded.
-def handle_client(client, conn, addr, skip_dictionary):
-    if not skip_dictionary:
+def handle_client(client, conn, addr):
+    method = conn.recv(2048).decode('utf-8')
+    """
+    method can equal
+    """
+    if method == "!ACCEPT-DICTIONARY":
         host_file_dict = getShareableFilesAsDictionary()
         while True:
             remote_file_dictionary_length = conn.recv(64).decode('utf-8')
@@ -75,6 +79,7 @@ def handle_client(client, conn, addr, skip_dictionary):
                 return
     temp_client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)  # Socket object
     temp_client.connect((addr[0], PORT))
+    temp_client.send("!IGNORE-DICTIONARY").encode('utf-8')
     sendFilesByDictionary(temp_client, host_unique_file_dict, True)
     print(f"[DISCONNECTED] {addr} has disconnected")
     conn.close()
@@ -173,11 +178,12 @@ if __name__ == '__main__':
     # If nodes is empty, begin listening
     if not nodes:
         print("[STARTING] Client is starting...")
-        start(True)
+        start()
     else:
         for node in nodes:
             remote_client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)  # Socket object
             remote_client.connect(node)
+            remote_client.send("!ACCEPT-DICTIONARY").encode('utf-8')
             sendFileDictionary(remote_client)
             remote_file_dictionary_length = remote_client.recv(64).decode('utf-8')
             remote_file_dictionary_length = int(remote_file_dictionary_length)
@@ -188,4 +194,4 @@ if __name__ == '__main__':
             remote_file_dictionary = getShareableFilesAsDictionary()
             sendFilesByDictionary(remote_client, remote_file_dictionary, False)
         print("[STARTING] Client is starting...")
-        start(False)
+        start()
