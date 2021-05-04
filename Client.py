@@ -24,8 +24,8 @@ def start(skip_dictionary):
     print(f"[LISTENING] Currently listening on {SERVER}")
     while True:
         conn, addr = host_client.accept()
-        thread = threading.Thread(target=handle_client, args=(host_client, conn, addr))
-        thread.start(skip_dictionary)
+        thread = threading.Thread(target=handle_client, args=(host_client, conn, addr, skip_dictionary))
+        thread.start()
         print(f"[CONNECTED] {addr} has connected")
     exit(0)
 
@@ -33,24 +33,24 @@ def start(skip_dictionary):
 # While true, we expect to receive 4 messages per file, followed by a message to indicate whether to continue.
 # Messages between sockets need to be encoded before sending and decoded after receiving.
 #   file_data comes as a bytes-like objects and thus does not need to be encoded/decoded.
-def handle_client(client, conn, addr):
-    host_file_dict = getShareableFilesAsDictionary()
-    while True:
-        remote_file_dictionary_length = conn.recv(64).decode('utf-8')
-        if remote_file_dictionary_length:
-            remote_file_dictionary_length = int(remote_file_dictionary_length)
-            conn.send("[1/2] Remote Dictionary Length Received".encode('utf-8'))
-            remote_file_dictionary = conn.recv(remote_file_dictionary_length)
-            conn.send("[2/2] Remote Dictionary Received".encode('utf-8'))
-            remote_file_dictionary = pickle.loads(remote_file_dictionary)
-            host_unique_file_dict = compareShareableFiles(host_file_dict, remote_file_dictionary)
-            remote_unique_file_dict = compareShareableFiles(remote_file_dictionary, host_file_dict)
-            print("Remote Unique File Dictionary:",remote_unique_file_dict)
-            print("Host Unique File Dictionary:", host_unique_file_dict)
-            remote_unique_file_dict = pickle.dumps(remote_unique_file_dict)
-            sendMessageWithHeader(conn, remote_unique_file_dict)
-            break
-    print("Second while loop is starting")
+def handle_client(client, conn, addr, skip_dictionary):
+    if not skip_dictionary:
+        host_file_dict = getShareableFilesAsDictionary()
+        while True:
+            remote_file_dictionary_length = conn.recv(64).decode('utf-8')
+            if remote_file_dictionary_length:
+                remote_file_dictionary_length = int(remote_file_dictionary_length)
+                conn.send("[1/2] Remote Dictionary Length Received".encode('utf-8'))
+                remote_file_dictionary = conn.recv(remote_file_dictionary_length)
+                conn.send("[2/2] Remote Dictionary Received".encode('utf-8'))
+                remote_file_dictionary = pickle.loads(remote_file_dictionary)
+                host_unique_file_dict = compareShareableFiles(host_file_dict, remote_file_dictionary)
+                remote_unique_file_dict = compareShareableFiles(remote_file_dictionary, host_file_dict)
+                print("Remote Unique File Dictionary:",remote_unique_file_dict)
+                print("Host Unique File Dictionary:", host_unique_file_dict)
+                remote_unique_file_dict = pickle.dumps(remote_unique_file_dict)
+                sendMessageWithHeader(conn, remote_unique_file_dict)
+                break
     while True:
         file_name_length = conn.recv(64).decode('utf-8')
         if file_name_length:
