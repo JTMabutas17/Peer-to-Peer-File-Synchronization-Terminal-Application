@@ -50,9 +50,10 @@ def handle_client(client, conn, addr):
             remote_unique_file_dict = pickle.dumps(remote_unique_file_dict)
             sendMessageWithHeader(conn, remote_unique_file_dict)
             # These two messages are receiving messages that the dictionary was received
-            client.recv(2048).decode('utf-8')
-            client.recv(2048).decode('utf-8')
-        break
+            conn.recv(2048).decode('utf-8')
+            conn.recv(2048).decode('utf-8')
+            break
+    print("Second while loop is starting")
     while True:
         file_name_length = conn.recv(64).decode('utf-8')
         if file_name_length:
@@ -136,26 +137,6 @@ def sendFileDictionary(client):
     file_dict = getShareableFilesAsDictionary()
     file_data_pickled = pickle.dumps(file_dict)
     sendMessageWithHeader(client, file_data_pickled)
-
-def receiveFileDictionary(client):
-    remote_fd_length = client.recv(64).decode('utf-8')
-    sendMessage(client, bytes("[1/2] File Dictionary Length Received"))
-    remote_file_dictionary = client.recv(remote_fd_length).decode('utf-8')
-    sendMessage(client, bytes("[2/2] File Dictionary Received"))
-    file_dictionary = getShareableFilesAsDictionary()
-    unique_file_dictionary = compareShareableFiles(file_dictionary, remote_file_dictionary)
-
-    print(unique_file_dictionary)
-
-    # # Send file_dict
-    # fd_length = pickle.dump(file_dict)
-    # fd_length = len(fd_length)
-    # send_length = bytes(str(fd_length), 'utf-8')
-    # send_length += b' ' * (64 - len(send_length))
-    # client.send(send_length)
-    # # [1/2] File Dict Length Received
-    # print(client.recv(2048).decode('utf-8'))
-    # file_name_length = conn.recv(64).decode('utf-8')
 
 # For sending raw messages
 # Use this when message < 2048
