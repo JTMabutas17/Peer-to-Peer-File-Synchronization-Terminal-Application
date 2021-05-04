@@ -24,7 +24,7 @@ def start():
     print(f"[LISTENING] Currently listening on {SERVER}")
     while True:
         conn, addr = client.accept()
-        thread = threading.Thread(target=handle_client, args=(conn, addr))
+        thread = threading.Thread(target=handle_client, args=(client, conn, addr))
         thread.start()
         print(f"[CONNECTED] {addr} has connected")
     exit(0)
@@ -33,7 +33,8 @@ def start():
 # While true, we expect to receive 4 messages per file, followed by a message to indicate whether to continue.
 # Messages between sockets need to be encoded before sending and decoded after receiving.
 #   file_data comes as a bytes-like objects and thus does not need to be encoded/decoded.
-def handle_client(conn, addr):
+def handle_client(client, conn, addr):
+    pre_sync_file_dict = getShareableFilesAsDictionary()
     while True:
         file_name_length = conn.recv(64).decode('utf-8')
         if file_name_length:
@@ -52,6 +53,7 @@ def handle_client(conn, addr):
             continue_download = conn.recv(64).decode('utf-8')
             if continue_download == "!DISCONNECT":
                 break
+    sendFilesByDictionary(client, pre_sync_file_dict)
     print(f"[DISCONNECTED] {addr} has disconnected")
     conn.close()
 
@@ -94,30 +96,60 @@ def send_file(client, file_name, file_data):
     # [COMPLETE] File Created
     print(client.recv(2048).decode('utf-8'))
 
-def sendFilesByList(files):
+def sendFilesByList(client, files):
     for file in files:
         file_data = getFileContentsAsBytes(file)
-        t = threading.Thread(target=send_file, args=(server, file, file_data))
+        t = threading.Thread(target=send_file, args=(client, file, file_data))
         t.start()
         t.join()
         if file == files[-1]:
-            sendMessage(server, "!DISCONNECT")
+            sendMessage(client, "!DISCONNECT")
         else:
-            sendMessage(server, "!CONTINUTE")
+            sendMessage(client, "!CONTINUTE")
 
-def sendFilesByDictionary(files):
+def sendFilesByDictionary(client, files):
     for i, (file_name,file_size) in enumerate(files.items()):
         file_data = getFileContentsAsBytes(file_name)
-        t = threading.Thread(target=send_file, args=(server, file_name, file_data))
+        t = threading.Thread(target=send_file, args=(client, file_name, file_data))
         t.start()
         t.join()
         if i == len(files)-1:
-            sendMessage(server, bytes("!DISCONNECT",'utf-8'))
+            sendMessage(client, bytes("!DISCONNECT",'utf-8'))
         else:
-            sendMessage(server, bytes("!CONTINUE",'utf-8'))
+            sendMessage(client, bytes("!CONTINUE",'utf-8'))
 
-def sendFileDictionary():
+def sendFileDictionary(client):
     file_dict = getShareableFilesAsDictionary()
+    file_data_pickled = pickle.dump(file_dict)
+    fd_length = len(file_data_pickled)
+    send_length = bytes(str(fd_length), 'utf-8')
+    send_length += b' ' * (64 - len(send_length))
+    client.send(send_length)
+    # [1/2] File Dictionary Length Received
+    print(client.recv(2048).decode('utf-8'))
+    client.send(file_data_pickled)
+    # [2/2] File Dictionary Received
+    print(client.recv(2048).decode('utf-8'))
+
+def receiveFileDictionary(client):
+    remote_fd_length = client.recv(64).decode('utf-8')
+    sendMessage(client, bytes("[1/2] File Dictionary Length Received"))
+    remote_file_dictionary = client.recv(remote_fd_length).decode('utf-8')
+    sendMessage(client, bytes("[2/2] File Dictionary Received"))
+    file_dictionary = getShareableFilesAsDictionary()
+    unique_file_dictionary = compareShareableFiles(file_dictionary, remote_file_dictionary)
+
+    print(unique_file_dictionary)
+
+    # # Send file_dict
+    # fd_length = pickle.dump(file_dict)
+    # fd_length = len(fd_length)
+    # send_length = bytes(str(fd_length), 'utf-8')
+    # send_length += b' ' * (64 - len(send_length))
+    # client.send(send_length)
+    # # [1/2] File Dict Length Received
+    # print(client.recv(2048).decode('utf-8'))
+    # file_name_length = conn.recv(64).decode('utf-8')
 
 def sendMessage(client, message):
     client.send(message)
@@ -147,7 +179,9 @@ if __name__ == '__main__':
         start()
     else:
         for node in nodes:
-            server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)  # Socket object
-            server.connect(node)
+            remote_client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)  # Socket object
+            remote_client.connect(node)
             file_dictionary = getShareableFilesAsDictionary()
-            sendFilesByDictionary(file_dictionary)
+            sendFilesByDictionary(remote_client, file_dictionary)
+        print("[STARTING] Client is starting...")
+        start()
