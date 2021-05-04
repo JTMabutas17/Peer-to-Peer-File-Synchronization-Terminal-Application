@@ -53,9 +53,11 @@ def handle_client(client, conn, addr):
             continue_download = conn.recv(64).decode('utf-8')
             if continue_download == "!DISCONNECT":
                 break
-    remote_client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)  # Socket object
-    remote_client.connect(addr)
-    sendFilesByDictionary(remote_client, pre_sync_file_dict)
+            elif continue_download == "!KILL":
+                conn.close()
+                return
+    host_client.connect(addr)
+    sendFilesByDictionary(host_client, pre_sync_file_dict, True)
     print(f"[DISCONNECTED] {addr} has disconnected")
     conn.close()
 
@@ -109,14 +111,17 @@ def sendFilesByList(client, files):
         else:
             sendMessage(client, "!CONTINUTE")
 
-def sendFilesByDictionary(client, files):
+def sendFilesByDictionary(client, files, terminate_cycle):
     for i, (file_name,file_size) in enumerate(files.items()):
         file_data = getFileContentsAsBytes(file_name)
         t = threading.Thread(target=send_file, args=(client, file_name, file_data))
         t.start()
         t.join()
         if i == len(files)-1:
-            sendMessage(client, bytes("!DISCONNECT",'utf-8'))
+            if terminate_cycle:
+                sendMessage(client, bytes("!KILL", 'utf-8'))
+            else:
+                sendMessage(client, bytes("!DISCONNECT",'utf-8'))
         else:
             sendMessage(client, bytes("!CONTINUE",'utf-8'))
 
@@ -184,6 +189,6 @@ if __name__ == '__main__':
             remote_client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)  # Socket object
             remote_client.connect(node)
             file_dictionary = getShareableFilesAsDictionary()
-            sendFilesByDictionary(remote_client, file_dictionary)
+            sendFilesByDictionary(remote_client, file_dictionary, False)
         print("[STARTING] Client is starting...")
         start()
