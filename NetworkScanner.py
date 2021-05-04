@@ -35,7 +35,7 @@ def get_ip_addresses():
     gateway_ip = network + gateway_ip
     broadcast_ip = network + broadcast_ip
     # Define ip_to_ignore to include host_ip, gateway_ip, and broadcast_ip
-    ip_to_ignore = [gateway_ip, broadcast_ip]
+    ip_to_ignore = [gateway_ip, host_ip, broadcast_ip]
     # Use regex to find all ip addresses that match network
     ip_addresses = re.findall(network+"\d{1,3}", ip_addresses)
 
