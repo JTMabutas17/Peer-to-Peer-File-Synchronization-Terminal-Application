@@ -52,28 +52,29 @@ def handle_client(client, conn, addr):
                 remote_unique_file_dict = pickle.dumps(remote_unique_file_dict)
                 sendMessageWithHeader(conn, remote_unique_file_dict)
                 break
-    while True:
-        file_name_length = conn.recv(64).decode('utf-8')
-        if file_name_length:
-            conn.send("[1/4] File Name Length Received".encode('utf-8'))
-            file_name_length = int(file_name_length)
-            file_name = conn.recv(file_name_length)
-            conn.send("[2/4] File Name Received".encode('utf-8'))
-            file_name = file_name.decode('utf-8')
-            file_data_length = conn.recv(64).decode('utf-8')
-            conn.send("[3/4] File Data Length Received".encode('utf-8'))
-            file_data_length = int(file_data_length)
-            file_data = conn.recv(file_data_length)
-            conn.send("[4/4] File Data Received".encode('utf-8'))
-            createFile(file_name, file_data)
-            conn.send("[COMPLETE] File Created".encode('utf-8'))
-            continue_download = conn.recv(64).decode('utf-8')
-            if continue_download == "!DISCONNECT":
-                break
-            elif continue_download == "!KILL":
-                print(f"[DISCONNECTED] {addr} has disconnected")
-                conn.close()
-                return
+    if conn.recv(2048).decode('utf-8') == "!EMPTY-DICTIONARY":
+        while True:
+            file_name_length = conn.recv(64).decode('utf-8')
+            if file_name_length:
+                conn.send("[1/4] File Name Length Received".encode('utf-8'))
+                file_name_length = int(file_name_length)
+                file_name = conn.recv(file_name_length)
+                conn.send("[2/4] File Name Received".encode('utf-8'))
+                file_name = file_name.decode('utf-8')
+                file_data_length = conn.recv(64).decode('utf-8')
+                conn.send("[3/4] File Data Length Received".encode('utf-8'))
+                file_data_length = int(file_data_length)
+                file_data = conn.recv(file_data_length)
+                conn.send("[4/4] File Data Received".encode('utf-8'))
+                createFile(file_name, file_data)
+                conn.send("[COMPLETE] File Created".encode('utf-8'))
+                continue_download = conn.recv(64).decode('utf-8')
+                if continue_download == "!DISCONNECT":
+                    break
+                elif continue_download == "!KILL":
+                    print(f"[DISCONNECTED] {addr} has disconnected")
+                    conn.close()
+                    return
     temp_client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)  # Socket object
     temp_client.connect((addr[0], PORT))
     temp_client.send("!IGNORE-DICTIONARY".encode('utf-8'))
@@ -119,6 +120,9 @@ def sendFilesByList(client, files):
             sendMessage(client, "!CONTINUTE")
 
 def sendFilesByDictionary(client, files, terminate_cycle):
+    if len(files) == 0:
+        sendMessage(client, bytes("!EMPTY-DICTIONARY",'utf-8'))
+    sendMessage(client, bytes("!INCOMING-DICTIONARY", 'utf-8'))
     for i, (file_name,file_size) in enumerate(files.items()):
         file_data = getFileContentsAsBytes(file_name)
         t = threading.Thread(target=send_file, args=(client, file_name, file_data))
@@ -188,6 +192,7 @@ if __name__ == '__main__':
             remote_file_dictionary = remote_client.recv(remote_file_dictionary_length)
             remote_client.send("[2/2] Remote Dictionary Received".encode('utf-8'))
             remote_file_dictionary = pickle.loads(remote_file_dictionary)
+            remote_client.send("!EMPTY-DICTIONARY".encode('utf-8'))
             sendFilesByDictionary(remote_client, remote_file_dictionary, False)
         print("[STARTING] Client is starting...")
         start()
