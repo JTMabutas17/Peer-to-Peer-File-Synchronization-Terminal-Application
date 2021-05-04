@@ -19,13 +19,13 @@ host_client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 host_client.bind((CLIENT_IP, 5050))
 
 # Start. Gets called if there are no other peers in the network.
-def start():
+def start(skip_dictionary):
     host_client.listen()
     print(f"[LISTENING] Currently listening on {SERVER}")
     while True:
         conn, addr = host_client.accept()
         thread = threading.Thread(target=handle_client, args=(host_client, conn, addr))
-        thread.start()
+        thread.start(skip_dictionary)
         print(f"[CONNECTED] {addr} has connected")
     exit(0)
 
@@ -49,9 +49,6 @@ def handle_client(client, conn, addr):
             print("Host Unique File Dictionary:", host_unique_file_dict)
             remote_unique_file_dict = pickle.dumps(remote_unique_file_dict)
             sendMessageWithHeader(conn, remote_unique_file_dict)
-            # These two messages are receiving messages that the dictionary was received
-            conn.recv(2048).decode('utf-8')
-            conn.recv(2048).decode('utf-8')
             break
     print("Second while loop is starting")
     while True:
@@ -176,7 +173,7 @@ if __name__ == '__main__':
     # If nodes is empty, begin listening
     if not nodes:
         print("[STARTING] Client is starting...")
-        start()
+        start(True)
     else:
         for node in nodes:
             remote_client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)  # Socket object
@@ -191,4 +188,4 @@ if __name__ == '__main__':
             remote_file_dictionary = getShareableFilesAsDictionary()
             sendFilesByDictionary(remote_client, remote_file_dictionary, False)
         print("[STARTING] Client is starting...")
-        start()
+        start(False)
