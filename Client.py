@@ -49,6 +49,9 @@ def handle_client(client, conn, addr):
             print("Host Unique File Dictionary:", host_unique_file_dict)
             remote_unique_file_dict = pickle.dumps(remote_unique_file_dict)
             sendMessageWithHeader(conn, remote_unique_file_dict)
+            # These two messages are receiving messages that the dictionary was received
+            client.recv(2048).decode('utf-8')
+            client.recv(2048).decode('utf-8')
         break
     while True:
         file_name_length = conn.recv(64).decode('utf-8')
