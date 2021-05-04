@@ -15,16 +15,16 @@ Otherwise, listen so that other peers can synchronize with you.
 
 PORT = 5050
 CLIENT_IP = socket.gethostbyname(socket.gethostname())
-client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-client.bind((CLIENT_IP, 5050))
+host_client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+host_client.bind((CLIENT_IP, 5050))
 
 # Start. Gets called if there are no other peers in the network.
 def start():
-    client.listen()
+    host_client.listen()
     print(f"[LISTENING] Currently listening on {SERVER}")
     while True:
-        conn, addr = client.accept()
-        thread = threading.Thread(target=handle_client, args=(client, conn, addr))
+        conn, addr = host_client.accept()
+        thread = threading.Thread(target=handle_client, args=(host_client, conn, addr))
         thread.start()
         print(f"[CONNECTED] {addr} has connected")
     exit(0)
@@ -53,6 +53,7 @@ def handle_client(client, conn, addr):
             continue_download = conn.recv(64).decode('utf-8')
             if continue_download == "!DISCONNECT":
                 break
+    host_client.connect(client)
     sendFilesByDictionary(client, pre_sync_file_dict)
     print(f"[DISCONNECTED] {addr} has disconnected")
     conn.close()
