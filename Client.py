@@ -35,6 +35,11 @@ def start():
 #   file_data comes as a bytes-like objects and thus does not need to be encoded/decoded.
 def handle_client(client, conn, addr):
     pre_sync_file_dict = getShareableFilesAsDictionary()
+    file_dictionary_length = conn.recv(64).decode('utf-8')
+    conn.send("[1/2] Remote Dictionary Length Received".encode('utf-8'))
+    file_dictionary = conn.recv(file_dictionary_length).decode('utf-8')
+    print(file_dictionary)
+    pass
     while True:
         file_name_length = conn.recv(64).decode('utf-8')
         if file_name_length:
@@ -54,6 +59,7 @@ def handle_client(client, conn, addr):
             if continue_download == "!DISCONNECT":
                 break
             elif continue_download == "!KILL":
+                print(f"[DISCONNECTED] {addr} has disconnected")
                 conn.close()
                 return
     temp_client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)  # Socket object
@@ -78,27 +84,13 @@ def check_node_port(ip, port):
 def send_file(client, file_name, file_data):
     print(f"[SENDING] Sending {file_name}")
     # Send file_name
-    fn = bytes(file_name, 'utf-8')
-    fn_length = len(fn)
-    send_length = bytes(str(fn_length), 'utf-8')
-    send_length += b' ' * (64 - len(send_length))
-    client.send(send_length)
     # [1/4] File Name Length Received
-    print(client.recv(2048).decode('utf-8'))
-    client.send(fn)
     # [2/4] File Name Received
-    print(client.recv(2048).decode('utf-8'))
+    sendMessageWithHeader(client,bytes(file_name,'utf-8'))
     # Send file_data
-    file_data_length = len(file_data)
-    send_length = str(file_data_length).encode('utf-8')
-    send_length += b' ' * (64 - len(send_length))
-    client.send(bytes(send_length))
     # [3/4] File Data Length Received
-    print(client.recv(2048).decode('utf-8'))
-    client.send(bytes(file_data))
     # [4/4] File Data Received
-    print(client.recv(2048).decode('utf-8'))
-    # Receive reponse
+    sendMessageWithHeader(client,file_data)
     # [COMPLETE] File Created
     print(client.recv(2048).decode('utf-8'))
 
@@ -130,15 +122,7 @@ def sendFilesByDictionary(client, files, terminate_cycle):
 def sendFileDictionary(client):
     file_dict = getShareableFilesAsDictionary()
     file_data_pickled = pickle.dump(file_dict)
-    fd_length = len(file_data_pickled)
-    send_length = bytes(str(fd_length), 'utf-8')
-    send_length += b' ' * (64 - len(send_length))
-    client.send(send_length)
-    # [1/2] File Dictionary Length Received
-    print(client.recv(2048).decode('utf-8'))
-    client.send(file_data_pickled)
-    # [2/2] File Dictionary Received
-    print(client.recv(2048).decode('utf-8'))
+    sendMessageWithHeader(client, file_data_pickled)
 
 def receiveFileDictionary(client):
     remote_fd_length = client.recv(64).decode('utf-8')
@@ -160,8 +144,21 @@ def receiveFileDictionary(client):
     # print(client.recv(2048).decode('utf-8'))
     # file_name_length = conn.recv(64).decode('utf-8')
 
+# For sending raw messages
+# Use this when message < 2048
 def sendMessage(client, message):
     client.send(message)
+
+# For sending messages with variable message sizes
+# Use this for sending files
+def sendMessageWithHeader(client, message):
+    message_length = len(message)
+    send_length = bytes(str(message_length), 'utf-8')
+    send_length += b' ' * (64 - len(send_length))
+    client.send(send_length)
+    print(client.recv(2048).decode('utf-8'))
+    client.send(message)
+    print(client.recv(2048).decode('utf-8'))
 
 if __name__ == '__main__':
     host = socket.gethostname()  # Get local machine name
@@ -190,6 +187,7 @@ if __name__ == '__main__':
         for node in nodes:
             remote_client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)  # Socket object
             remote_client.connect(node)
+            sendFileDictionary(remote_client)
             file_dictionary = getShareableFilesAsDictionary()
             sendFilesByDictionary(remote_client, file_dictionary, False)
         print("[STARTING] Client is starting...")
