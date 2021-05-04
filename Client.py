@@ -36,16 +36,16 @@ def start():
 def handle_client(client, conn, addr):
     host_file_dict = getShareableFilesAsDictionary()
     remote_file_dictionary_length = conn.recv(64).decode('utf-8')
+    remote_file_dictionary_length = int(remote_file_dictionary_length)
     conn.send("[1/2] Remote Dictionary Length Received".encode('utf-8'))
     remote_file_dictionary = conn.recv(remote_file_dictionary_length)
     conn.send("[2/2] Remote Dictionary Received".encode('utf-8'))
-    remote_file_dictionary = pickle.loads(file_dictionary)
+    remote_file_dictionary = pickle.loads(remote_file_dictionary)
     remote_unique_file_dict = compareShareableFiles(host_file_dict, remote_file_dictionary)
     host_unique_file_dict = compareShareableFiles(remote_file_dictionary, host_file_dict)
     print("Remote Unique File Dictionary:",remote_unique_file_dict)
     print("Host Unique File Dictionary:", host_unique_file_dict)
-    pass
-    sendMessageWithHeader()
+    sendMessageWithHeader(client, remote_unique_file_dict)
     while True:
         file_name_length = conn.recv(64).decode('utf-8')
         if file_name_length:
@@ -70,7 +70,7 @@ def handle_client(client, conn, addr):
                 return
     temp_client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)  # Socket object
     temp_client.connect((addr[0], PORT))
-    sendFilesByDictionary(temp_client, unique_file_dict, True)
+    sendFilesByDictionary(temp_client, host_unique_file_dict, True)
     print(f"[DISCONNECTED] {addr} has disconnected")
     conn.close()
     return
@@ -194,7 +194,13 @@ if __name__ == '__main__':
             remote_client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)  # Socket object
             remote_client.connect(node)
             sendFileDictionary(remote_client)
-            file_dictionary = getShareableFilesAsDictionary()
-            sendFilesByDictionary(remote_client, file_dictionary, False)
+            remote_file_dictionary_length = remote_client.recv(64).decode('utf-8')
+            remote_file_dictionary_length = int(remote_file_dictionary_length)
+            remote_client.send("[1/2] Remote Dictionary Length Received".encode('utf-8'))
+            remote_file_dictionary = remote_client.recv(remote_file_dictionary_length)
+            remote_client.send("[2/2] Remote Dictionary Received".encode('utf-8'))
+            remote_file_dictionary = pickle.loads(remote_file_dictionary)
+            remote_file_dictionary = getShareableFilesAsDictionary()
+            sendFilesByDictionary(remote_client, remote_file_dictionary, False)
         print("[STARTING] Client is starting...")
         start()
