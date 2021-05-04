@@ -52,14 +52,15 @@ def handle_client(client, conn, addr):
             conn.send("[COMPLETE] File Created".encode('utf-8'))
             continue_download = conn.recv(64).decode('utf-8')
             if continue_download == "!DISCONNECT":
-                break
+                host_client.connect((addr[0], PORT))
+                sendFilesByDictionary(host_client, pre_sync_file_dict, True)
+                print(f"[DISCONNECTED] {addr} has disconnected")
+                conn.close()
+                return
             elif continue_download == "!KILL":
                 conn.close()
                 return
-    host_client.connect(addr)
-    sendFilesByDictionary(host_client, pre_sync_file_dict, True)
-    print(f"[DISCONNECTED] {addr} has disconnected")
-    conn.close()
+
 
 # Function for checking whether a host has an open port (5050)
 # We use this in conjunction with NetworkScanner to check the ports of only the hosts in our network from arp.
