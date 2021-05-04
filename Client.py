@@ -35,9 +35,6 @@ def start():
 #   file_data comes as a bytes-like objects and thus does not need to be encoded/decoded.
 def handle_client(client, conn, addr):
     method = conn.recv(2048).decode('utf-8')
-    """
-    method can equal
-    """
     if method == "!ACCEPT-DICTIONARY":
         host_file_dict = getShareableFilesAsDictionary()
         while True:
@@ -191,7 +188,6 @@ if __name__ == '__main__':
             remote_file_dictionary = remote_client.recv(remote_file_dictionary_length)
             remote_client.send("[2/2] Remote Dictionary Received".encode('utf-8'))
             remote_file_dictionary = pickle.loads(remote_file_dictionary)
-            remote_file_dictionary = getShareableFilesAsDictionary()
             sendFilesByDictionary(remote_client, remote_file_dictionary, False)
         print("[STARTING] Client is starting...")
         start()
