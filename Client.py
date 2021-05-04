@@ -79,7 +79,7 @@ def handle_client(client, conn, addr):
                 return
     temp_client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)  # Socket object
     temp_client.connect((addr[0], PORT))
-    temp_client.send("!IGNORE-DICTIONARY").encode('utf-8')
+    temp_client.send("!IGNORE-DICTIONARY".encode('utf-8'))
     sendFilesByDictionary(temp_client, host_unique_file_dict, True)
     print(f"[DISCONNECTED] {addr} has disconnected")
     conn.close()
@@ -183,7 +183,7 @@ if __name__ == '__main__':
         for node in nodes:
             remote_client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)  # Socket object
             remote_client.connect(node)
-            remote_client.send("!ACCEPT-DICTIONARY").encode('utf-8')
+            remote_client.send("!ACCEPT-DICTIONARY".encode('utf-8'))
             sendFileDictionary(remote_client)
             remote_file_dictionary_length = remote_client.recv(64).decode('utf-8')
             remote_file_dictionary_length = int(remote_file_dictionary_length)
