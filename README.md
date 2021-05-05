@@ -42,7 +42,7 @@
      5. And they live happily ever after (hopefully) with synched files
 4. How are files sent over sockets?
    * Files are sent over sockets by reading their data in bytes and sending it through the socket. The receiver receives the data bytes and opens a file in writeable bytes mode through the following commands:
-     * ```
+       ```
        file = open(file_path, "wb")
        file.write(file_contents)
        file.close()
