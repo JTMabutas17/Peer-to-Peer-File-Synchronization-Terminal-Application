@@ -28,4 +28,17 @@
      * We intend for the README to exist at all times so we can there is always a file being exchanged
 
 ---
-# Questions 
+# Key Feature Questions Answered
+1. How does the client discover other clients on the network?
+   * We do so by pinging all of the devices within the network and check the "arp -a" command. After we find all of the devices available, we then check if port 5050 (in our case) is open and ready to sync.
+2. How does the client deal with matching files of the same name?
+   * We deal with matching files of the same name by checking for unique files before making the exchange. Each client passes a dictionary of each file and coresponding file size to compare and identify which files are unique based on name so they can be synched between the systems.
+3. How does the client determine the order of syncing with regards to the files of other clients?
+   * In the case that the client.py runs (Node 1) and does not find any other nodes, it acts as the "server". Once the node is in that state, another node (Node 2) searches for available nodes through client.py on their system will find Node 1 is available to connect and goes through these steps.
+   1. Node 2 sends over its dictionary
+   2. Node 1 receives the dictionary and identifies which files are unique then sends Node 2 the dictionary of unique files it wants
+   3. Node 2 uses that dictionary to determine which of the files to send over.
+   4. Once Node 2 has finished sending its files over, it listens to receive the files from Node 1
+   5. And they live happily ever after (hopefully) with synched files
+4. How are files sent over sockets?
+   * 
