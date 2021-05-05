@@ -18,8 +18,9 @@
 ## 3.Client.py
   * Purpose of file: Client.py is the main file that is run for the application. It's intended purpose is to synchronize files within the shareable folder with other peers that are also running Client.py on their system.
   * **On-Run** 
-    1. It will check all available nodes for open port 5050
-    2. 
+    1. Program will check all available nodes for open port 5050
+    2. After it scans for all nodes, it will determine whether or not there are any nodes ready to connect
+       * If there aren't any nodes that are available to connect, the node itself acts as a "server" and listens for other nodes once they become available running the application
 ---
 ## 4. Shareable Directory/Folder
   *
