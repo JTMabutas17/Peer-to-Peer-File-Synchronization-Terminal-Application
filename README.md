@@ -35,10 +35,15 @@
    * We deal with matching files of the same name by checking for unique files before making the exchange. Each client passes a dictionary of each file and coresponding file size to compare and identify which files are unique based on name so they can be synched between the systems.
 3. How does the client determine the order of syncing with regards to the files of other clients?
    * In the case that the client.py runs (Node 1) and does not find any other nodes, it acts as the "server". Once the node is in that state, another node (Node 2) searches for available nodes through client.py on their system will find Node 1 is available to connect and goes through these steps.
-   1. Node 2 sends over its dictionary
-   2. Node 1 receives the dictionary and identifies which files are unique then sends Node 2 the dictionary of unique files it wants
-   3. Node 2 uses that dictionary to determine which of the files to send over.
-   4. Once Node 2 has finished sending its files over, it listens to receive the files from Node 1
-   5. And they live happily ever after (hopefully) with synched files
+     1. Node 2 sends over its dictionary
+     2. Node 1 receives the dictionary and identifies which files are unique then sends Node 2 the dictionary of unique files it wants
+     3. Node 2 uses that dictionary to determine which of the files to send over.
+     4. Once Node 2 has finished sending its files over, it listens to receive the files from Node 1
+     5. And they live happily ever after (hopefully) with synched files
 4. How are files sent over sockets?
-   * 
+   * Files are sent over sockets by reading their data in bytes and sending it through the socket. The receiver receives the data bytes and opens a file in writeable bytes mode through the following commands:
+     * ```
+       file = open(file_path, "wb")
+       file.write(file_contents)
+       file.close()
+       ```
