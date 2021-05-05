@@ -21,6 +21,11 @@
     1. Program will check all available nodes for open port 5050
     2. After it scans for all nodes, it will determine whether or not there are any nodes ready to connect
        * If there aren't any nodes that are available to connect, the node itself acts as a "server" and listens for other nodes once they become available running the application
+    3. If there are nodes in the network, begin the exchange of files
 ---
 ## 4. Shareable Directory/Folder
-  *
+  * This folder is responsible for holding files that are desired to be shared between clients
+     * We intend for the README to exist at all times so we can there is always a file being exchanged
+
+---
+# Questions 
