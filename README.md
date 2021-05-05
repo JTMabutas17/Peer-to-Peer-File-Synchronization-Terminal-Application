@@ -41,7 +41,14 @@
      4. Once Node 2 has finished sending its files over, it listens to receive the files from Node 1
      5. And they live happily ever after (hopefully) with synched files
 4. How are files sent over sockets?
-   * Files are sent over sockets by reading their data in bytes and sending it through the socket. The receiver receives the data bytes and opens a file in writeable bytes mode through the following commands:
+   * Files are sent over sockets by reading their data in bytes and sending it through the socket.
+     * The program reads the data in bytes by opening a file in readable bytes through the following commands commands:
+       ```
+       file = open(file_path, "rb")
+       data = file.read()
+       file.close()
+       ```
+   *  The receiver receives the data bytes and opens a file in writeable bytes mode through the following commands:
        ```
        file = open(file_path, "wb")
        file.write(file_contents)
