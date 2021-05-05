@@ -1,7 +1,7 @@
 # CECS327 TermAssignment1
 ## Justin Mabutas and Joseph Cuevas
 ---
-**Files Explanation**
+# **Files Explanation**
 ## 1.FileHandler.py
   * This file is responsible for three things: 
       1. Finding all of the files inside the Shareable directory
